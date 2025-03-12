@@ -1,0 +1,9 @@
+---
+admin_group: sudo
+mariadb_service: mariadb
+mariadb_socket: /run/mysqld/mysqld.sock
+apache_service: apache2
+apache_user: www-data
+apache_group: www-data
+php_ini_file: /etc/php/8.2/apache2/php.ini
+...

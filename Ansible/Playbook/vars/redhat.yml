@@ -1,0 +1,9 @@
+---
+admin_group: wheel
+mariadb_service: mariadb
+mariadb_socket: /var/lib/mysql/mysql.sock
+apache_service: httpd
+apache_user: apache
+apache_group: apache
+php_ini_file: /etc/php.ini
+...

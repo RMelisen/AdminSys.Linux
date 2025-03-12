@@ -1,0 +1,275 @@
+---
+- name: Manage Debian and Rocky servers
+  hosts: all
+  become: true
+  tasks:
+    - name: (All) Include variable file
+      ansible.builtin.include_vars:
+        file: all.yml
+
+    - name: (Debian) Include variable file
+      ansible.builtin.include_vars:
+        file: debian.yml
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: (RedHat) Include variable file
+      ansible.builtin.include_vars:
+        file: redhat.yml
+      when: ansible_facts['os_family'] in ['RedHat', 'Rocky']
+
+    - name: (Debian) Install mandatory packages
+      ansible.builtin.apt:
+        name:
+          - firewalld
+          - python3-firewall
+          - htop
+          - wget
+          - curl
+        state: present
+        update_cache: true
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: (RedHat) Install EPL repository
+      ansible.builtin.dnf:
+        name:
+          - epel-release
+        state: present
+        update_cache: true
+      when: ansible_facts['os_family'] in ['RedHat', 'Rocky']
+
+    - name: (RedHat) Install mandatory packages
+      ansible.builtin.dnf:
+        name:
+          - firewalld
+          - python3-firewall
+          - htop
+          - wget
+          - curl
+          - bash-completion
+          - nano
+          - tar
+        state: present
+        update_cache: true
+      when: ansible_facts['os_family'] in ['RedHat', 'Rocky']
+
+    - name: Add group for ssh connections
+      ansible.builtin.group:
+        name: "{{ ssh_group }}"
+        state: present
+
+    - name: Add main user
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: "{{ ssh_group }}"
+        append: true
+        state: present
+
+    - name: Add user "Aline"
+      ansible.builtin.user:
+        name: "aline"
+        groups:
+          - "{{ ssh_group }}"
+          - "{{ admin_group }}"
+        append: true
+        state: present
+        create_home: true
+        shell: "/bin/bash"
+        system: false
+        ssh_key_file: ".ssh/id_ed25519"
+        ssh_key_type: "ed25519"
+        ssh_key_bits: '4096'
+        generate_ssh_key: true
+        expires: '-1'
+
+    - name: Set authorize keys for "Aline"
+      ansible.posix.authorized_key:
+        user: "aline"
+        state: present
+        key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_ed25519.pub') }}"
+
+    - name: (Debian) Install MariaDB
+      ansible.builtin.apt:
+        name:
+          - mariadb-server
+          - python3-mysqldb
+        state: present
+        update_cache: true
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: (RedHat) Install MariaDB
+      ansible.builtin.dnf:
+        name:
+          - mariadb-server
+          - python3-PyMySQL
+        state: present
+        update_cache: true
+      when: ansible_facts['os_family'] in ['RedHat', 'Rocky']
+
+    - name: (All) Start and enable MariaDB Services
+      ansible.builtin.service:
+        name: "{{ mariadb_service }}"
+        state: started
+        enabled: true
+
+    - name: Create a cms database
+      community.mysql.mysql_db:
+        name: "{{ database_name }}"
+        state: present
+        check_implicit_admin: true
+        login_unix_socket: "{{ mariadb_socket }}"
+
+    - name: Create user for the database
+      community.mysql.mysql_user:
+        priv: "{{ database_name }}.*:ALL"
+        name: "{{ database_user }}"
+        host: "{{ database_host }}"
+        password: "{{ database_password }}"
+        state: present
+        check_implicit_admin: true
+        login_unix_socket: "{{ mariadb_socket }}"
+
+    - name: (Debian) Install Apache
+      ansible.builtin.apt:
+        name:
+          - apache2
+        state: present
+        update_cache: true
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: (Debian) Enable SSL module
+      community.general.apache2_module:
+        state: present
+        name: ssl
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: (Debian) Enable "default-ssl" VirtualHost
+      ansible.builtin.file:
+        src: ../sites-available/default-ssl.conf
+        path: /etc/apache2/sites-enabled/default-ssl.conf
+        owner: root
+        group: root
+        state: link
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: (RedHat) Install Apache
+      ansible.builtin.dnf:
+        name:
+          - httpd
+          - mod_ssl
+        state: present
+        update_cache: true
+      when: ansible_facts['os_family'] in ['RedHat', 'Rocky']
+
+    - name: Open firewalld http and https ports
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        state: enabled
+        immediate: true
+        permanent: true
+      loop:
+        - http
+        - https
+
+    - name: (Debian) Enable PHP 8.3 repository
+      ansible.builtin.apt:
+        name:
+          - php
+          - php-mysql
+          - php-imagick
+          - php-curl
+          - php-gd
+          - php-intl
+          - php-mbstring
+          - php-xml
+          - php-zip
+        state: present
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: (RedHat) Enable PHP 8.2 repository
+      ansible.builtin.dnf:
+        name:
+          - '@php:8.2'
+          - 'php-gd'
+          - 'php-intl'
+          - 'php-mysqlnd'
+          - 'php-pecl-zip'
+        state: present
+      when: ansible_facts['os_family'] in ['RedHat', 'Rocky']
+
+    - name: Configure php.ini file for Joomla
+      ansible.builtin.lineinfile:
+        path: "{{ php_ini_file }}"
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - { regexp: '^memory_limit', line: 'memory_limit = 256M'}
+        - { regexp: '^max_input_time', line: 'max_input_time = 60'}
+        - { regexp: '^max_execution_time', line: 'max_execution_time = 60'}
+        - { regexp: '^post_max_size', line: 'post_max_size = 64M'}
+        - { regexp: '^max_file_uploads', line: 'max_file_uploads = 50'}
+        - { regexp: '^output_buffering', line: 'output_buffering = off'}
+
+    - name: Download Joomla to /var/www
+      ansible.builtin.get_url:
+        url: "{{ joomla_url }}"
+        dest: /var/www
+        mode: '644'
+        checksum: "{{ joomla_sha1 }}"
+
+    - name: Remove index.html file in DocumentRoot
+      ansible.builtin.file:
+        path: /var/www/html/index.html
+        state: absent
+
+    - name: Change DocumentRoot owner
+      ansible.builtin.file:
+        path: /var/www/html
+        state: directory
+        owner: "{{ apache_user }}"
+        group: "{{ apache_group }}"
+        mode: '0755'
+
+    - name: Extract the Joomla .tar.gz file
+      ansible.builtin.unarchive:
+        src: "{{ joomla_path }}"
+        remote_src: true
+        dest: /var/www/html
+        owner: "{{ apache_user }}"
+        group: "{{ apache_group }}"
+
+    - name: (Debian) Restart Apache service
+      ansible.builtin.service:
+        name: "{{ apache_service }}"
+        state: restarted
+        enabled: true
+
+    - name: Change server Hostname
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+        use: systemd
+
+    - name: (Debian) Modify /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '^127.0.1.1'
+        line: '127.0.1.1'
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: (Debian) Upgrade operating system
+      ansible.builtin.apt:
+        name: "*"
+        state: latest # noqa: package-latest
+        only_upgrade: true
+        update_cache: true
+        force_apt_get: true
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: (RedHat) Upgrade operating system
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_only: true
+        update_cache: true
+      when: ansible_facts['os_family'] in ['RedHat', 'Rocky']
+...
