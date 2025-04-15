@@ -5,6 +5,7 @@ from .commands import clone_vm, destroy_vm, start_vm, shutdown_vm, set_ram, set_
 
 inventory_file = "inventory.ini"
 diskPath = "/home/rmeli/Documents/KVM/KVM/"
+hosts_file = "/etc/hosts"
 
 def clone_vms(filename):
     vms = read_config_file(filename)
@@ -75,6 +76,25 @@ def add_inventory_host(filename):
 
         with open(inventory_file, "w") as inventory:
             inventory.writelines(lines)
+
+        new_entry = f"{ip} {vm['name']}\n"
+
+        try:
+            # Check if the entry already exists in the hosts file
+            with open(hosts_file, "r") as f:
+                if new_entry in f.readlines():
+                    print(f"Entry '{new_entry.strip()}' already exists in {hosts_file}")
+                    continue
+
+            # Add the new entry
+            with open(hosts_file, "a") as f:
+                f.write(new_entry)
+            print(f"Successfully added '{new_entry.strip()}' to {hosts_file}")
+
+        except PermissionError:
+            print(f"Permission denied to write to {hosts_file}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
 def manage_inventory(filename):
   create_inventory_file()
