@@ -69,6 +69,7 @@ def add_inventory_host(filename):
 
         line_to_add = f"{vm['name']} ansible_host={ip} ansible_user={vm['user']} ansible_port={vm['port']}\n"
 
+        # Add VM to inventory.ini file
         index += 1
         with open(inventory_file, "r") as inventory:
             lines = inventory.readlines()
@@ -79,6 +80,7 @@ def add_inventory_host(filename):
 
         new_entry = f"{ip} {vm['name']}\n"
 
+        # Add VM to /etc/hosts file
         try:
             # Check if the entry already exists in the hosts file
             with open(hosts_file, "r") as f:
