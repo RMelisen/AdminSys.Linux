@@ -14,7 +14,7 @@ def main():
     if check_script_parameters(args):
         start_time = datetime.datetime.now()
         if args.action == 'clone':
-            clone_vms(args.file, "/home/rmeli/Documents/KVM/KVM/")  # Image disks folder
+            clone_vms(args.file)
         elif args.action == 'destroy':
             destroy_vms(args.file)
         elif args.action == 'start':

@@ -4,8 +4,9 @@ from .utils import read_config_file
 from .commands import clone_vm, destroy_vm, start_vm, shutdown_vm, set_ram, set_lan
 
 inventory_file = "inventory.ini"
+diskPath = "/home/rmeli/Documents/KVM/KVM/"
 
-def clone_vms(filename, diskPath):
+def clone_vms(filename):
     vms = read_config_file(filename)
     for vm in vms:
         clone_vm(vm['name'], vm['flavour'], diskPath)
