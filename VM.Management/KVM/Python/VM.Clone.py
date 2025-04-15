@@ -4,13 +4,13 @@ import configparser
 import time
 
 def clone_vm(config_file, disk_dir):
-    # Clone des VMs Linux en utilisant les informations du fichier de configuration
-
+    # Clone VMs based on config file (at the end of this script)
+    
     if not os.path.exists(config_file):
-        print(f"Erreur : Le fichier {config_file} n'existe pas.")
+        print(f"Error : Config file [{config_file}] doesn't exists")
         return
 
-    config = configparser.ConfigParser(allow_no_value=True)  # Permet les lignes vides
+    config = configparser.ConfigParser(allow_no_value=True)  # Allow empty lines
     config.read(config_file)
 
     for section in config.sections():
@@ -22,37 +22,38 @@ def clone_vm(config_file, disk_dir):
         vcpu = config[section].get('VCPU')
         osversion = config[section].get('OSVERSION')
 
-        print(f"Clonage de {vm_source} avec prefixe {vm_target_prefix} ({n_clones} clones)")
-        print(f"Reseau : {network} | RAM : {ram}MB | vCPU : {vcpu}")
+        print(f"Cloning [{vm_source}] to [{vm_target_prefix}] ([{n_clones}] clones)")
+        print(f"Network : [{network}] | RAM : {ram}MB | vCPU : {vcpu}")
 
-        # Vérifier si la VM source existe
+        # Check if source VM exists
         try:
             subprocess.run(['virsh', 'list', '--all'], capture_output=True, text=True, check=True)
             if vm_source not in subprocess.run(['virsh', 'list', '--all'], capture_output=True, text=True).stdout:
-                raise ValueError(f"La VM {vm_source} n'existe pas !")
+                raise ValueError(f"Virtual machine [{vm_source}] doesn't exists !")
         except (subprocess.CalledProcessError, ValueError) as e:
-            print(f"Erreur : {e}")
+            print(f"Error : {e}")
             continue
-
+        
+        # Create n_clones VMs
         for i in range(1, n_clones + 1):
             vm_target = f"{vm_target_prefix}-{i}"
             disk_source = os.path.join(disk_dir, f"{vm_source}.qcow2")
             disk_target = os.path.join(disk_dir, f"{vm_target}.qcow2")
 
             if not os.path.exists(disk_source):
-                print(f"Erreur : Le fichier source {disk_source} n'existe pas !")
+                print(f"Error : Source image disk [{disk_source}] doesn't exists !")
                 continue
 
-            print(f"Creation de {vm_target}...")
+            print(f"Creating [{vm_target}] ...")
 
             # Copier l'image disque
             try:
                 subprocess.run(['cp', disk_source, disk_target], check=True)
             except subprocess.CalledProcessError as e:
-                print(f"Erreur lors de la copie du disque : {e}")
+                print(f"Error while copying image disk : {e}")
                 continue
 
-            # Créer la nouvelle VM avec `virt-install`
+            # Creating new VM with "virt-install"
             try:
                 virt_install_cmd = [
                     'virt-install',
@@ -67,23 +68,26 @@ def clone_vm(config_file, disk_dir):
                     '--noautoconsole'
                 ]
                 subprocess.run(virt_install_cmd, check=True)
-                print(f"Clonage réussi : {vm_target} créé.")
-
-                # Démarrer la VM et attacher l'interface réseau
-                subprocess.run(['virsh', 'start', vm_target], check=True)
-                print(f"{vm_target} a été démarré avec succès.")
-
-                time.sleep(5)  # Attendre 5 secondes
-                subprocess.run(['virsh', 'attach-interface', '--domain', vm_target, '--type', 'network', '--source', network, '--config', '--live'], check=True)
-                print(f"➡️  Interface réseau {network} attachée à {vm_target}.")
-                print("----------------------------------------")
-
+                print(f"Cloning succesfull : [{vm_target}] created")
             except subprocess.CalledProcessError as e:
-                print(f"Échec du clonage ou de l'attachement réseau : {e}")
+                print(f"Error : Cloning failed : {e}")
+                continue    
+
+            try:
+                # Start VM and attach network interface
+                subprocess.run(['virsh', 'start', vm_target], check=True)
+                print(f"[{vm_target}] started")
+
+                time.sleep(5)  # Wait 5 seconds to ensure VM is well started
+                subprocess.run(['virsh', 'attach-interface', '--domain', vm_target, '--type', 'network', '--source', network, '--config', '--live'], check=True)
+                print(f"Network interface [{network}] attached to [{vm_target}]")
+                print("-------------------------------------------------------")
+            except subprocess.CalledProcessError as e:
+                print(f"Error : Failed to attach network interface : {e}")
                 continue
 
 if __name__ == "__main__":
-    config_file = "/home/rmeli/config_VM_Linux.conf"  # Chemin vers le fichier de configuration
-    disk_dir = "/home/rmeli/Documents/4 - KVM/KVM"  # Répertoire des disques
+    config_file = "/home/rmeli/Documents/Admin.Sys.Linux.Git/AdminSys.Linux/VM.Management/KVM/Python/VM.Config.conf"
+    disk_dir = "/home/rmeli/Documents/KVM/KVM"
 
     clone_vm(config_file, disk_dir)
