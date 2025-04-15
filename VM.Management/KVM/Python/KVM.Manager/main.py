@@ -2,7 +2,7 @@
 
 import argparse
 import datetime
-from KVM import clone_vms, destroy_vms, start_vms, stop_vms
+from KVM import clone_vms, destroy_vms, start_vms, stop_vms, manage_inventory
 from Validation import check_script_parameters, TColors
 
 def main():
@@ -21,6 +21,8 @@ def main():
             start_vms(args.file)
         elif args.action == 'stop':
             stop_vms(args.file)
+        elif args.action == 'inventory':
+            manage_inventory(args.file)
         stop_time = datetime.datetime.now()
         operation_time = stop_time - start_time
         print(f'{TColors.OKCYAN}The [{args.action}] took {str(operation_time)}s{TColors.ENDC}')

@@ -23,7 +23,9 @@ def create_vm_object(vm: str):
         "name": vm_details[0],
         "flavour": vm_details[1],
         "ram": vm_details[2],
-        "lan": vm_details[3]
+        "lan": vm_details[3],
+        "user": vm_details[4],
+        "port": vm_details[5]
     }
 
 
