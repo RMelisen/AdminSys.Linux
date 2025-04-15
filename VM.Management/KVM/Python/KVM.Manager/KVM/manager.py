@@ -55,8 +55,7 @@ def remove_inventory_hosts():
 
 def add_inventory_host(filename):
     vms = read_config_file(filename)
-    global index
-    index += 1
+    index = -1
 
     for vm in vms:
         cmd = ["virsh","domifaddr",vm['name']]
@@ -68,6 +67,7 @@ def add_inventory_host(filename):
 
         line_to_add = f"{vm['name']} ansible_host={ip} ansible_user={vm['user']} ansible_port={vm['port']}\n"
 
+        index += 1
         with open(inventory_file, "r") as inventory:
             lines = inventory.readlines()
             lines.insert(index, line_to_add)
@@ -76,7 +76,6 @@ def add_inventory_host(filename):
             inventory.writelines(lines)
 
 def manage_inventory(filename):
-  index = -1
   create_inventory_file()
   remove_inventory_hosts()
   add_inventory_host(filename)

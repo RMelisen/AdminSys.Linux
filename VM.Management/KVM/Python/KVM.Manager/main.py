@@ -7,7 +7,7 @@ from Validation import check_script_parameters, TColors
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-a', '--action', choices=['clone', 'destroy', 'start', 'stop'], help='Action to perform: clone, destroy, start or stop')
+    parser.add_argument('-a', '--action', choices=['clone', 'destroy', 'start', 'stop', 'inventory'], help='Action to perform: clone, destroy, start, stop or inventory')
     parser.add_argument('-f', '--file', type=str, help='A config file containing the list of VMs to work with')
     args = parser.parse_args()
 

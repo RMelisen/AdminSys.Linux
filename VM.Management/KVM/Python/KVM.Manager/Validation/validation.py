@@ -3,8 +3,8 @@ from .text_colors import TColors
 
 
 def check_script_parameters(args):
-    if args.action not in ['clone', 'destroy', 'start', 'stop']:
-        print(f'{TColors.FAIL}You must supply an -a (--action) [in clone|destroy|start|stop]{TColors.ENDC}')
+    if args.action not in ['clone', 'destroy', 'start', 'stop', 'inventory']:
+        print(f'{TColors.FAIL}You must supply an -a (--action) [in clone|destroy|start|stop|inventory]{TColors.ENDC}')
         return False
     if not args.file:
         print(f'{TColors.FAIL}You must supply a valid -f (--file){TColors.ENDC}')
