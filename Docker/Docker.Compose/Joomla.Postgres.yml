@@ -1,0 +1,35 @@
+---
+services:
+  web:
+    image: joomla:5.3.0-php8.1-apache
+    environment:
+      JOOMLA_DB_HOST: db
+      JOOMLA_DB_USER: d8admin
+      JOOMLA_DB_PASSWORD: topsecret
+      JOOMLA_DB_NAME: joomla
+      JOOMLA_DB_TYPE: pgsql
+    volumes:
+      - d8-joomladata:/var/www/html
+    networks:
+      - d8-bridge
+    ports:
+      - 8080:80
+
+  db:
+    image: postgres:17.4
+    environment:
+      POSTGRES_DB: joomla
+      POSTGRES_USER: d8admin
+      POSTGRES_PASSWORD: topsecret
+    volumes:
+      - d8-dbdata:/var/lib/mysql
+    networks:
+      - d8-bridge
+
+volumes:
+  d8-joomladata:
+  d8-dbdata:
+
+networks:
+  d8-bridge:
+...

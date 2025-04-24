@@ -1,0 +1,35 @@
+---
+services:
+  web:
+    image: nextcloud:29.0.16-apache
+    environment:
+      NEXTCLOUD_DB_HOST: db
+      NEXTCLOUD_DB_USER: d9admin
+      NEXTCLOUD_DB_PASSWORD: topsecret
+      NEXTCLOUD_DB_NAME: nextcloud
+    volumes:
+      - d9-nextclouddata:/var/www/html
+    networks:
+      - d9-bridge
+    ports:
+      - 9080:80
+
+  db:
+    image: mariadb:11.8.1-ubi9-rc
+    environment:
+      MARIADB_ROOT_PASSWORD: topsecret
+      MARIADB_DATABASE: nextcloud
+      MARIADB_USER: d9admin
+      MARIADB_PASSWORD: topsecret
+    volumes:
+      - d9-dbdata:/var/lib/mysql
+    networks:
+      - d9-bridge
+
+volumes:
+  d9-nextclouddata:
+  d9-dbdata:
+
+networks:
+  d9-bridge:
+...

@@ -1,0 +1,35 @@
+---
+services:
+  web:
+    image: wordpress:6.8.0-php8.1-apache
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: d7admin
+      WORDPRESS_DB_PASSWORD: topsecret
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - d7-wordpressdata:/var/www/html
+    networks:
+      - d7-bridge
+    ports:
+      - 7080:80
+
+  db:
+    image: mysql:9.3.0
+    environment:
+      MYSQL_ROOT_PASSWORD: topsecret
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: d7admin
+      MYSQL_PASSWORD: topsecret
+    volumes:
+      - d7-dbdata:/var/lib/mysql
+    networks:
+      - d7-bridge
+
+volumes:
+  d7-wordpressdata:
+  d7-dbdata:
+
+networks:
+  d7-bridge:
+...
